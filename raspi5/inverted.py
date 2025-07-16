@@ -45,7 +45,7 @@ picam0 = Picamera2(0)
 picam1 = Picamera2(1)
 
 config0 = picam0.create_video_configuration(
-    main={"size": (640, 480), "format": "RGB888"},
+    main={"format":"RGB888","size": (640, 480),},
     controls={
         "FrameDurationLimits": (33333, 33333),  # ~30 fps
         "AeEnable": True,
@@ -54,7 +54,7 @@ config0 = picam0.create_video_configuration(
 )
 
 config1 = picam1.create_video_configuration(
-    main={"size": (640, 480), "format": "RGB888"},
+    main={"format":"RGB888","size": (640, 480),},
     controls={
         "FrameDurationLimits": (33333, 33333),
         "AeEnable": True,

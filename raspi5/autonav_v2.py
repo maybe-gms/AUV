@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 from picamera2 import Picamera2
-import threading
 import time
 
 # === Load Labels ===
@@ -17,8 +16,8 @@ model.setInputSwapRB(True)
 
 # === Target Classes ===
 targets = ["Human", "Plastic Bottle"]
-BASELINE_CM = 12.0         # Camera baseline
-FOCAL_LENGTH_PX = 630.0   # Pre-calibrated for OV5647
+BASELINE_CM = 12.0        # Distance between cameras
+FOCAL_LENGTH_PX = 630.0   # Calibrated focal length
 
 depth_history = {}
 
@@ -106,37 +105,54 @@ try:
                 bottle_data.append((depth, center0[0]))
 
         # === Movement Decision ===
-        if human_data:
-            human_data.sort()  # Closest first
-            human_depth, human_x = human_data[0]
-            print(f"Human Depth: {human_depth} cm")
-
-            if human_depth > 200:
-                print("Decision: Move Forward\n")
-            elif human_depth > 50:
-                if human_x < 200:
-                    print("Decision: Turn Left Slightly\n")
-                elif human_x > 440:
-                    print("Decision: Turn Right Slightly\n")
-                else:
-                    print("Decision: Approaching Human\n")
+        def get_zone(x):
+            if x < 213:
+                return "right"
+            elif x > 426:
+                return "left"
             else:
-                print("Decision: Stop (Human Very Close)\n")
-        else:
-            print("Decision: No Human Detected. Stop or Rotate.\n")
+                return "center"
 
-        # === Bottle Avoidance ===
+        movement_decision = ""
+        obstacle_blocking = False
+
         for bottle_depth, bottle_x in bottle_data:
-            print(f"Plastic Bottle Depth: {bottle_depth} cm")
-            if bottle_depth < 70:
-                if 200 < bottle_x < 440:
-                    print("Decision: Obstacle Ahead (Bottle). Stop or Avoid.\n")
-                elif bottle_x <= 200:
-                    print("Decision: Bottle on Left. Turn Right.\n")
+            zone = get_zone(bottle_x)
+            if bottle_depth < 100 and zone == "center":
+                obstacle_blocking = True
+                print(f"Obstacle (Bottle) Ahead at {bottle_depth} cm, Zone: {zone}")
+                movement_decision = "Bottle Ahead. Rerouting..."
+                if bottle_x < 320:
+                    movement_decision += " Turn RIGHT."
                 else:
-                    print("Decision: Bottle on Right. Turn Left.\n")
+                    movement_decision += " Turn LEFT."
+                break
+
+        if human_data:
+            human_data.sort()
+            human_depth, human_x = human_data[0]
+            human_zone = get_zone(human_x)
+            print(f"Human Detected at {human_depth} cm, Zone: {human_zone}")
+
+            if obstacle_blocking:
+                print(f"Decision: {movement_decision}\n")
             else:
-                print("Decision: Bottle not blocking path.\n")
+                if human_zone == "center":
+                    if human_depth > 200:
+                        print("Decision: Human Centered. MOVE FORWARD FAST.\n")
+                    elif human_depth > 50:
+                        print("Decision: Human Centered. Approaching.\n")
+                    else:
+                        print("Decision: Human Very Close. STOP.\n")
+                elif human_zone == "left":
+                    print("Decision: Human on Left. TURN RIGHT.\n")  # Robot's POV
+                else:
+                    print("Decision: Human on Right. TURN LEFT.\n")  # Robot's POV
+        else:
+            if not obstacle_blocking:
+                print("Decision: No Human. Rotate to Search.\n")
+            else:
+                print(f"Decision: {movement_decision}\n")
 
         time.sleep(0.1)
 
