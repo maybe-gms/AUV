@@ -16,7 +16,6 @@ picam0.start()
 picam1.start()
 time.sleep(2)
 
-motor.setup()
 
 def get_zone(x):
     if x < 213:
@@ -106,5 +105,5 @@ try:
         time.sleep(0.1)
 
 except KeyboardInterrupt:
-    motor.cleanup()
+    motor.stop()
     print("Stopped.")

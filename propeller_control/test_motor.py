@@ -1,12 +1,17 @@
 import motor_control as motor
 import time
 
-motor.setup()
+print("Moving forward")
 motor.move_forward()
-time.sleep(2)
-motor.turn_left()
-time.sleep(2)
-motor.turn_right()
-time.sleep(2)
+time.sleep(3)
 motor.stop()
-motor.cleanup()
+
+print("Turning right")
+motor.turn_right()
+time.sleep(3)
+motor.stop()
+
+print("Turning left")
+motor.turn_left()
+time.sleep(3)
+motor.stop()
